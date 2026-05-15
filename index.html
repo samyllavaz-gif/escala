@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -70,7 +71,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .cal-day.pending{background:#fcebeb;color:#a32d2d}
 .cal-day.covered{background:#eaf3de;color:#27500a}
 .cal-day.selected{outline:2px solid #185FA5;outline-offset:1px}
-.cal-day.weekend{color:#aaa}
+.cal-day.partial{background:#faeeda;color:#633806}
+
 .cal-legend{display:flex;gap:10px;flex-wrap:wrap}
 .legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#666}
 .legend-dot{width:10px;height:10px;border-radius:3px}
@@ -92,7 +94,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .form-label{font-size:13px;color:#555;margin-bottom:5px;display:block;font-weight:500}
 .form-input{width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:15px;background:#fff;color:#111;font-family:inherit;-webkit-appearance:none;appearance:none}
 .form-input:focus{outline:none;border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,0.1)}
-select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+select.form-input{background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘12’ height=‘12’ viewBox=‘0 0 24 24’ fill=‘none’ stroke=’%23888’ stroke-width=‘2’%3E%3Cpath d=‘m6 9 6 6 6-6’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
 .time-row{display:flex;align-items:center;gap:8px}
 .time-sep{font-size:14px;color:#888;flex-shrink:0}
 .btn-primary{width:100%;padding:13px;background:#185FA5;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;margin-top:10px;font-family:inherit}
@@ -136,6 +138,7 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 
 @media print{body{background:#fff}.app{max-width:100%}}
 </style>
+
 </head>
 <body>
 <div class="app">
@@ -165,78 +168,80 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
   </nav>
   <div class="content">
 
-    <!-- PAINEL -->
-    <div id="sec-painel" class="section active">
-      <div class="stats-grid" id="stats-grid"></div>
-      <div class="sec-divider">Unidades com pendências hoje</div>
-      <div id="pending-units"></div>
-      <div class="sec-divider">Próximos feriados</div>
-      <div id="upcoming-holidays"></div>
-    </div>
+```
+<!-- PAINEL -->
+<div id="sec-painel" class="section active">
+  <div class="stats-grid" id="stats-grid"></div>
+  <div class="sec-divider">Unidades com pendências hoje</div>
+  <div id="pending-units"></div>
+  <div class="sec-divider">Próximos feriados</div>
+  <div id="upcoming-holidays"></div>
+</div>
 
-    <!-- AGENDA -->
-    <div id="sec-agenda" class="section">
-      <div class="card">
-        <div class="cal-header">
-          <button class="cal-nav-btn" onclick="prevMonth()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
-          <span id="cal-month-label" style="font-size:15px;font-weight:600;color:#111"></span>
-          <button class="cal-nav-btn" onclick="nextMonth()"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
-        </div>
-        <div class="cal-grid">
-          <div class="cal-day-label">D</div><div class="cal-day-label">S</div><div class="cal-day-label">T</div><div class="cal-day-label">Q</div><div class="cal-day-label">Q</div><div class="cal-day-label">S</div><div class="cal-day-label">S</div>
-          <div id="cal-days" style="display:contents"></div>
-        </div>
-        <div class="cal-legend">
-          <div class="legend-item"><div class="legend-dot" style="background:#185FA5"></div>Hoje</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#eaf3de"></div>Coberto</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#fcebeb"></div>Pendente</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#faeeda"></div>Feriado</div>
-        </div>
-      </div>
-      <div id="day-detail-panel" style="display:none">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <div class="card-title" id="day-detail-title"></div>
-              <div class="card-subtitle" id="day-detail-subtitle"></div>
-            </div>
-            <button class="tab-btn active" onclick="openAddTurno()" style="font-size:12px;padding:6px 12px">+ Turno</button>
-          </div>
-          <div id="day-shifts-list"></div>
-        </div>
-      </div>
-      <div class="sec-divider">Filtrar por unidade</div>
-      <div class="tab-row" id="unit-filter-tabs"></div>
+<!-- AGENDA -->
+<div id="sec-agenda" class="section">
+  <div class="card">
+    <div class="cal-header">
+      <button class="cal-nav-btn" onclick="prevMonth()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <span id="cal-month-label" style="font-size:15px;font-weight:600;color:#111"></span>
+      <button class="cal-nav-btn" onclick="nextMonth()"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
     </div>
+    <div class="cal-grid">
+      <div class="cal-day-label">D</div><div class="cal-day-label">S</div><div class="cal-day-label">T</div><div class="cal-day-label">Q</div><div class="cal-day-label">Q</div><div class="cal-day-label">S</div><div class="cal-day-label">S</div>
+      <div id="cal-days" style="display:contents"></div>
+    </div>
+    <div class="cal-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#185FA5"></div>Hoje</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#eaf3de"></div>Completo</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#faeeda"></div>Parcial</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fcebeb"></div>Descoberto</div>
+    </div>
+  </div>
+  <div id="day-detail-panel" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title" id="day-detail-title"></div>
+          <div class="card-subtitle" id="day-detail-subtitle"></div>
+        </div>
+        <button class="tab-btn active" onclick="openAddTurno()" style="font-size:12px;padding:6px 12px">+ Turno</button>
+      </div>
+      <div id="day-shifts-list"></div>
+    </div>
+  </div>
+  <div class="sec-divider">Filtrar por unidade</div>
+  <div class="tab-row" id="unit-filter-tabs"></div>
+</div>
 
-    <!-- MÉDICOS -->
-    <div id="sec-medicos" class="section">
-      <div class="tab-row">
-        <button class="tab-btn active" onclick="filterDoctors('all',this)">Todos</button>
-        <button class="tab-btn" onclick="filterDoctors('ativo',this)">Ativos</button>
-        <button class="tab-btn" onclick="filterDoctors('ausente',this)">Ausentes</button>
-      </div>
-      <div id="doctors-list"></div>
-    </div>
+<!-- MÉDICOS -->
+<div id="sec-medicos" class="section">
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="filterDoctors('all',this)">Todos</button>
+    <button class="tab-btn" onclick="filterDoctors('ativo',this)">Ativos</button>
+    <button class="tab-btn" onclick="filterDoctors('ausente',this)">Ausentes</button>
+  </div>
+  <div id="doctors-list"></div>
+</div>
 
-    <!-- UNIDADES -->
-    <div id="sec-unidades" class="section">
-      <div id="units-list"></div>
-    </div>
+<!-- UNIDADES -->
+<div id="sec-unidades" class="section">
+  <div id="units-list"></div>
+</div>
 
-    <!-- HORAS EXTRAS -->
-    <div id="sec-horasextras" class="section">
-      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
-        <select class="form-input" id="ot-filter-month" style="flex:1" onchange="renderOT()">
-          <option value="">Todos os meses</option>
-        </select>
-        <button class="tab-btn" onclick="printOT()" style="margin:0;white-space:nowrap;display:flex;align-items:center;gap:6px">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir
-        </button>
-      </div>
-      <div id="ot-list"></div>
-      <div id="ot-summary"></div>
-    </div>
+<!-- HORAS EXTRAS -->
+<div id="sec-horasextras" class="section">
+  <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+    <select class="form-input" id="ot-filter-month" style="flex:1" onchange="renderOT()">
+      <option value="">Todos os meses</option>
+    </select>
+    <button class="tab-btn" onclick="printOT()" style="margin:0;white-space:nowrap;display:flex;align-items:center;gap:6px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir
+    </button>
+  </div>
+  <div id="ot-list"></div>
+  <div id="ot-summary"></div>
+</div>
+```
 
   </div>
 </div>
@@ -361,11 +366,13 @@ function renderCalendar(){
     const isToday=hoje.getFullYear()===calYear&&hoje.getMonth()===calMonth&&hoje.getDate()===d;
     const feriado=isFeriado(calYear,calMonth,d);
     const weekend=isWeekend(calYear,calMonth,d);
-    const hasCov=state.escalas[key]&&Object.values(state.escalas[key]).some(a=>a&&a.length>0);
+    const hasCov=state.unidades.length>0&&state.escalas[key]&&state.unidades.every(u=>state.escalas[key][u.id]&&state.escalas[key][u.id].length>0);
+    const hasSome=state.escalas[key]&&Object.values(state.escalas[key]).some(a=>a&&a.length>0);
     let cls='cal-day';
     if(isToday) cls+=' today';
     else if(feriado) cls+=' holiday';
     else if(hasCov) cls+=' covered';
+    else if(hasSome) cls+=' partial';
     else if(!weekend) cls+=' pending';
     else cls+=' weekend';
     if(selectedDate===key) cls+=' selected';
@@ -564,6 +571,12 @@ function openAddTurno(){
     <div class="form-group"><label class="form-label">Médico escalado</label><select class="form-input" id="t-medico">${medOpts}</select></div>
     <div class="form-group"><label class="form-label">É cobertura de ausência?</label><select class="form-input" id="t-cobertura">${ausOpts}</select></div>
     <div class="form-group"><label class="form-label">Observação (opcional)</label><input class="form-input" id="t-obs" type="text" placeholder="Ex: plantão especial, campanha..."></div>
+    <div style="border-top:0.5px solid rgba(0,0,0,0.1);margin:14px 0 14px"></div>
+    <div class="form-group">
+      <label class="form-label" style="font-weight:600;color:#111">Replicar este turno em outros dias</label>
+      <p style="font-size:12px;color:#888;margin-bottom:10px">Marque os dias em que este mesmo médico e horário devem ser copiados</p>
+      <div id="replicate-days" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div>
+    </div>
     <button class="btn-primary" onclick="saveShift()">Salvar turno</button>
     <button class="btn-secondary" onclick="closeModal('modal-turno')">Cancelar</button>
     <script>
@@ -588,9 +601,34 @@ function openAddTurno(){
       }
       window.sugerirHorario=sugere;
       sugere();
+      // gerar botões de replicação
+      (function(){
+        var base=new Date('${selectedDate}T00:00:00');
+        var container=document.getElementById('replicate-days');
+        if(!container) return;
+        var html='';
+        for(var i=1;i<=28;i++){
+          var d=new Date(base); d.setDate(base.getDate()+i);
+          var dk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+          var label=d.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'numeric'});
+          html+='<label style="display:flex;flex-direction:column;align-items:center;gap:3px;background:#f2f2f7;border-radius:8px;padding:7px 4px;cursor:pointer;font-size:11px;color:#555;text-align:center;border:1.5px solid transparent" id="rl-lbl-'+dk+'">'
+            +'<input type="checkbox" value="'+dk+'" name="repldate" style="width:15px;height:15px" onchange="toggleRlLabel(\''+dk+'\')">'
+            +label+'</label>';
+        }
+        container.innerHTML=html;
+      })();
     })();
     <\/script>
   `);
+}
+
+function toggleRlLabel(dk){
+  const lbl=document.getElementById('rl-lbl-'+dk);
+  if(!lbl) return;
+  const checked=lbl.querySelector('input').checked;
+  lbl.style.borderColor=checked?'#185FA5':'transparent';
+  lbl.style.background=checked?'#e6f1fb':'#f2f2f7';
+  lbl.style.color=checked?'#0c447c':'#555';
 }
 
 function saveShift(){
@@ -601,11 +639,21 @@ function saveShift(){
   const cob=document.getElementById('t-cobertura').value;
   const obs=document.getElementById('t-obs').value.trim();
   if(!ini||!fim){alert('Informe o horário de entrada e saída.');return;}
+  const shift={medicoId:mid,horaIni:ini,horaFim:fim,cobertura:!!cob,ausenteId:cob?parseInt(cob):null,obs};
+  // salvar no dia selecionado
   if(!state.escalas[selectedDate]) state.escalas[selectedDate]={};
   if(!state.escalas[selectedDate][uid]) state.escalas[selectedDate][uid]=[];
-  state.escalas[selectedDate][uid].push({medicoId:mid,horaIni:ini,horaFim:fim,cobertura:!!cob,ausenteId:cob?parseInt(cob):null,obs});
+  state.escalas[selectedDate][uid].push({...shift});
+  // replicar nos dias marcados
+  const extras=[...document.querySelectorAll('input[name=repldate]:checked')].map(c=>c.value);
+  extras.forEach(dk=>{
+    if(!state.escalas[dk]) state.escalas[dk]={};
+    if(!state.escalas[dk][uid]) state.escalas[dk][uid]=[];
+    state.escalas[dk][uid].push({...shift});
+  });
   saveState();
   closeModal('modal-turno');
+  if(extras.length>0) alert('Turno salvo e replicado em mais '+extras.length+' dia(s).');
   renderDayShifts(); renderCalendar(); renderStats(); renderPending();
 }
 
@@ -816,6 +864,7 @@ function printOT(){
     .ass-line{border-top:1px solid #333;padding-top:6px;font-size:12px;color:#555}
     @media print{body{padding:16px}.ass{page-break-inside:avoid}}
   </style></head><body>
+
   <h1>Relatório de Horas Extras</h1>
   <div class="sub">Período: ${periodo} &nbsp;|&nbsp; Gerado em: ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
   <table>
@@ -836,25 +885,26 @@ function printOT(){
 }
 
 function openFAB(){
-  const secs=['painel','agenda','medicos','unidades','horasextras'];
-  const active=secs.find(s=>document.getElementById('sec-'+s).classList.contains('active'));
-  if(active==='agenda') openAddTurno();
-  else if(active==='medicos') openAddMedico(null);
-  else if(active==='unidades') openAddUnidade(null);
-  else if(active==='horasextras') openAddOT();
+const secs=[‘painel’,‘agenda’,‘medicos’,‘unidades’,‘horasextras’];
+const active=secs.find(s=>document.getElementById(‘sec-’+s).classList.contains(‘active’));
+if(active===‘agenda’) openAddTurno();
+else if(active===‘medicos’) openAddMedico(null);
+else if(active===‘unidades’) openAddUnidade(null);
+else if(active===‘horasextras’) openAddOT();
 }
 
 function showModal(id,html){
-  document.getElementById(id+'-content').innerHTML=html;
-  document.getElementById(id).classList.add('open');
+document.getElementById(id+’-content’).innerHTML=html;
+document.getElementById(id).classList.add(‘open’);
 }
-function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeModal(id){document.getElementById(id).classList.remove(‘open’);}
 
 function confirmDelete(msg,fn){if(confirm(msg))fn();}
-function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escHtml(s){return String(s||’’).replace(/&/g,’&’).replace(/</g,’<’).replace(/>/g,’>’).replace(/”/g,’"’);}
 
-document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));});
-document.addEventListener('DOMContentLoaded',init);
+document.addEventListener(‘keydown’,e=>{if(e.key===‘Escape’)document.querySelectorAll(’.modal-overlay.open’).forEach(m=>m.classList.remove(‘open’));});
+document.addEventListener(‘DOMContentLoaded’,init);
 </script>
+
 </body>
 </html>
