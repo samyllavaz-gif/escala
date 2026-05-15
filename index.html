@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Escala UBS">
+<meta name="theme-color" content="#185FA5">
+<title>Escala UBS</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f2f2f7;min-height:100vh;font-size:16px}
+.app{max-width:430px;margin:0 auto;background:#fff;min-height:100vh;display:flex;flex-direction:column}
+.header{background:#fff;border-bottom:0.5px solid rgba(0,0,0,0.15);padding:14px 16px 10px;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px;font-weight:600;color:#111;display:flex;align-items:center;gap:8px}
+.header h1 svg{flex-shrink:0}
+.header p{font-size:12px;color:#666;margin-top:2px}
+.nav{display:flex;border-bottom:0.5px solid rgba(0,0,0,0.15);background:#fff;position:sticky;top:57px;z-index:99;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{flex:1;min-width:58px;padding:10px 4px 9px;border:none;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;border-bottom:2px solid transparent;color:#888;font-size:10px;font-family:inherit}
+.nav-btn.active{color:#185FA5;border-bottom-color:#185FA5}
+.nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.content{flex:1;padding:16px;overflow-y:auto}
+.section{display:none}
+.section.active{display:block}
+
+.stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.stat-card{background:#f2f2f7;border-radius:10px;padding:12px}
+.stat-num{font-size:26px;font-weight:600;color:#111}
+.stat-label{font-size:12px;color:#666;margin-top:2px}
+
+.alert-card{border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.alert-info{background:#e6f1fb;border:0.5px solid #b5d4f4}
+.alert-warn{background:#faeeda;border:0.5px solid #fac775}
+.alert-danger{background:#fcebeb;border:0.5px solid #f7c1c1}
+.alert-ok{background:#eaf3de;border:0.5px solid #c0dd97}
+.alert-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.alert-info .alert-title{color:#0c447c}
+.alert-warn .alert-title{color:#633806}
+.alert-danger .alert-title{color:#791f1f}
+.alert-ok .alert-title{color:#27500a}
+.alert-body{font-size:12px;margin-top:3px}
+.alert-info .alert-body{color:#185fa5}
+.alert-warn .alert-body{color:#854f0b}
+.alert-danger .alert-body{color:#a32d2d}
+
+.card{background:#fff;border:0.5px solid rgba(0,0,0,0.15);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;gap:8px}
+.card-title{font-size:15px;font-weight:600;color:#111}
+.card-subtitle{font-size:12px;color:#666;margin-top:2px}
+
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.badge-ok{background:#eaf3de;color:#27500a}
+.badge-warn{background:#faeeda;color:#633806}
+.badge-danger{background:#fcebeb;color:#a32d2d}
+.badge-info{background:#e6f1fb;color:#0c447c}
+.badge-gray{background:#f2f2f7;color:#444}
+
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-nav-btn{width:34px;height:34px;border:none;background:none;cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#111}
+.cal-nav-btn:active{background:#f2f2f7}
+.cal-nav-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:10px}
+.cal-day-label{text-align:center;font-size:11px;color:#888;padding:4px 0;font-weight:600}
+.cal-day{text-align:center;font-size:13px;padding:7px 2px;border-radius:7px;cursor:pointer;line-height:1}
+.cal-day.empty{opacity:0;pointer-events:none}
+.cal-day.today{background:#185FA5;color:#fff;font-weight:700}
+.cal-day.holiday{background:#faeeda;color:#633806}
+.cal-day.pending{background:#fcebeb;color:#a32d2d}
+.cal-day.covered{background:#eaf3de;color:#27500a}
+.cal-day.selected{outline:2px solid #185FA5;outline-offset:1px}
+.cal-day.weekend{color:#aaa}
+.cal-legend{display:flex;gap:10px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#666}
+.legend-dot{width:10px;height:10px;border-radius:3px}
+
+.tab-row{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.tab-row::-webkit-scrollbar{display:none}
+.tab-btn{padding:7px 14px;border-radius:20px;border:0.5px solid rgba(0,0,0,0.2);font-size:13px;cursor:pointer;background:#fff;color:#555;white-space:nowrap;font-family:inherit}
+.tab-btn.active{background:#185FA5;color:#fff;border-color:#185FA5}
+.tab-btn:active{opacity:0.8}
+
+.sec-divider{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin:16px 0 8px}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:300;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 40px;width:100%;max-width:430px;max-height:90vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:#ddd;border-radius:4px;margin:0 auto 18px}
+.modal-title{font-size:18px;font-weight:600;margin-bottom:16px;color:#111}
+.form-group{margin-bottom:14px}
+.form-label{font-size:13px;color:#555;margin-bottom:5px;display:block;font-weight:500}
+.form-input{width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:15px;background:#fff;color:#111;font-family:inherit;-webkit-appearance:none;appearance:none}
+.form-input:focus{outline:none;border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,0.1)}
+select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.time-row{display:flex;align-items:center;gap:8px}
+.time-sep{font-size:14px;color:#888;flex-shrink:0}
+.btn-primary{width:100%;padding:13px;background:#185FA5;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;margin-top:10px;font-family:inherit}
+.btn-primary:active{background:#0c447c}
+.btn-secondary{width:100%;padding:12px;background:#f2f2f7;color:#111;border:none;border-radius:12px;font-size:16px;cursor:pointer;margin-top:8px;font-family:inherit}
+.btn-secondary:active{background:#e5e5ea}
+.btn-ghost{background:none;border:none;cursor:pointer;color:#888;padding:4px;border-radius:6px;font-family:inherit}
+.btn-danger{color:#a32d2d}
+
+.shift-slot{background:#f2f2f7;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.shift-slot-info{flex:1}
+.shift-name{font-size:14px;font-weight:600;color:#111}
+.shift-time{font-size:12px;color:#185FA5;font-weight:600;margin-top:2px}
+.shift-dur{font-size:12px;color:#888;font-weight:400}
+.shift-cover{font-size:12px;color:#27500a;margin-top:2px}
+.shift-obs{font-size:12px;color:#888;margin-top:2px}
+
+.avatar{width:36px;height:36px;border-radius:50%;background:#b5d4f4;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0c447c;flex-shrink:0}
+.avatar.ausente{background:#f7c1c1;color:#a32d2d}
+
+.op-day-row{display:flex;align-items:center;padding:6px 0;border-bottom:0.5px solid rgba(0,0,0,0.08)}
+.op-day-row:last-child{border-bottom:none}
+.op-day-name{font-size:13px;color:#111;width:36px;flex-shrink:0;font-weight:500}
+.op-day-hours{font-size:12px;color:#555}
+
+.ot-row{background:#f2f2f7;border-radius:10px;padding:11px 13px;margin-bottom:8px}
+.ot-name{font-size:14px;font-weight:600;color:#111}
+.ot-meta{font-size:12px;color:#666;margin-top:4px}
+.ot-motivo{font-size:12px;color:#185FA5;margin-top:3px;font-style:italic}
+
+.inline-tag{background:#e5e5ea;border-radius:5px;padding:2px 7px;font-size:11px;color:#444;white-space:nowrap}
+.empty-state{text-align:center;padding:32px 16px;color:#888}
+.empty-state svg{width:40px;height:40px;stroke:#ccc;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 10px;display:block}
+.empty-state p{font-size:14px}
+
+.fab{position:fixed;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;background:#185FA5;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:200;box-shadow:0 4px 12px rgba(24,95,165,0.35)}
+.fab svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.fab:active{background:#0c447c}
+
+.unit-hour-hint{font-size:11px;color:#185FA5;margin-top:5px;min-height:16px}
+
+@media print{body{background:#fff}.app{max-width:100%}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg>
+      Escala UBS
+    </h1>
+    <p id="header-date"></p>
+  </div>
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showSection('painel',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Painel
+    </button>
+    <button class="nav-btn" onclick="showSection('agenda',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Agenda
+    </button>
+    <button class="nav-btn" onclick="showSection('medicos',this)">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Médicos
+    </button>
+    <button class="nav-btn" onclick="showSection('unidades',this)">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Unidades
+    </button>
+    <button class="nav-btn" onclick="showSection('horasextras',this)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/><path d="M16.5 19.5 18 21"/></svg>H.Ext
+    </button>
+  </nav>
+  <div class="content">
+
+    <!-- PAINEL -->
+    <div id="sec-painel" class="section active">
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="sec-divider">Unidades com pendências hoje</div>
+      <div id="pending-units"></div>
+      <div class="sec-divider">Próximos feriados</div>
+      <div id="upcoming-holidays"></div>
+    </div>
+
+    <!-- AGENDA -->
+    <div id="sec-agenda" class="section">
+      <div class="card">
+        <div class="cal-header">
+          <button class="cal-nav-btn" onclick="prevMonth()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <span id="cal-month-label" style="font-size:15px;font-weight:600;color:#111"></span>
+          <button class="cal-nav-btn" onclick="nextMonth()"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+        <div class="cal-grid">
+          <div class="cal-day-label">D</div><div class="cal-day-label">S</div><div class="cal-day-label">T</div><div class="cal-day-label">Q</div><div class="cal-day-label">Q</div><div class="cal-day-label">S</div><div class="cal-day-label">S</div>
+          <div id="cal-days" style="display:contents"></div>
+        </div>
+        <div class="cal-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#185FA5"></div>Hoje</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#eaf3de"></div>Coberto</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#fcebeb"></div>Pendente</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#faeeda"></div>Feriado</div>
+        </div>
+      </div>
+      <div id="day-detail-panel" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title" id="day-detail-title"></div>
+              <div class="card-subtitle" id="day-detail-subtitle"></div>
+            </div>
+            <button class="tab-btn active" onclick="openAddTurno()" style="font-size:12px;padding:6px 12px">+ Turno</button>
+          </div>
+          <div id="day-shifts-list"></div>
+        </div>
+      </div>
+      <div class="sec-divider">Filtrar por unidade</div>
+      <div class="tab-row" id="unit-filter-tabs"></div>
+    </div>
+
+    <!-- MÉDICOS -->
+    <div id="sec-medicos" class="section">
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="filterDoctors('all',this)">Todos</button>
+        <button class="tab-btn" onclick="filterDoctors('ativo',this)">Ativos</button>
+        <button class="tab-btn" onclick="filterDoctors('ausente',this)">Ausentes</button>
+      </div>
+      <div id="doctors-list"></div>
+    </div>
+
+    <!-- UNIDADES -->
+    <div id="sec-unidades" class="section">
+      <div id="units-list"></div>
+    </div>
+
+    <!-- HORAS EXTRAS -->
+    <div id="sec-horasextras" class="section">
+      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+        <select class="form-input" id="ot-filter-month" style="flex:1" onchange="renderOT()">
+          <option value="">Todos os meses</option>
+        </select>
+        <button class="tab-btn" onclick="printOT()" style="margin:0;white-space:nowrap;display:flex;align-items:center;gap:6px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir
+        </button>
+      </div>
+      <div id="ot-list"></div>
+      <div id="ot-summary"></div>
+    </div>
+
+  </div>
+</div>
+
+<button class="fab" id="fab-btn" onclick="openFAB()" aria-label="Adicionar" style="display:none">
+  <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<div class="modal-overlay" id="modal-main" onclick="closeModal('modal-main')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div id="modal-main-content"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-turno" onclick="closeModal('modal-turno')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div id="modal-turno-content"></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'escala_ubs_v1';
+const FERIADOS = [
+  {month:1,day:1,nome:"Confraternização Universal"},
+  {month:4,day:21,nome:"Tiradentes"},
+  {month:5,day:1,nome:"Dia do Trabalho"},
+  {month:9,day:7,nome:"Independência do Brasil"},
+  {month:10,day:12,nome:"Nossa Sra. Aparecida"},
+  {month:11,day:2,nome:"Finados"},
+  {month:11,day:15,nome:"Proclamação da República"},
+  {month:12,day:25,nome:"Natal"},
+];
+const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+const DEFAULT_STATE = {
+  medicos:[], unidades:[], escalas:{}, horasExtras:[],
+  nextMedId:1, nextUnitId:1, nextOtId:1
+};
+
+let state;
+function loadState(){
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if(saved){ state = JSON.parse(saved); }
+    else { state = JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+  } catch(e){ state = JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+}
+function saveState(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+}
+
+let calYear, calMonth, selectedDate=null, agendaUnitFilter=null;
+const hoje = new Date();
+
+function init(){
+  loadState();
+  calYear=hoje.getFullYear(); calMonth=hoje.getMonth();
+  document.getElementById('header-date').textContent=hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  renderAll(); loadOTMonths();
+}
+
+function renderAll(){
+  renderStats(); renderPending(); renderHolidays();
+  renderCalendar(); renderDoctors('all'); renderUnits(); renderUnitFilterTabs(); renderOT();
+}
+
+function showSection(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  btn.classList.add('active');
+  document.getElementById('fab-btn').style.display=id==='painel'?'none':'flex';
+}
+
+function getInitials(nome){return nome.split(' ').filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('').toUpperCase();}
+function isFeriado(y,m,d){return FERIADOS.find(f=>f.month===(m+1)&&f.day===d)||null;}
+function isWeekend(y,m,d){const w=new Date(y,m,d).getDay();return w===0||w===6;}
+function dateKey(y,m,d){return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+
+function renderStats(){
+  const ausentes=state.medicos.filter(m=>m.status==='ausente').length;
+  const tk=dateKey(hoje.getFullYear(),hoje.getMonth(),hoje.getDate());
+  const pendentes=state.unidades.filter(u=>!(state.escalas[tk]&&state.escalas[tk][u.id]&&state.escalas[tk][u.id].length>0)).length;
+  document.getElementById('stats-grid').innerHTML=`
+    <div class="stat-card"><div class="stat-num">${state.medicos.length}</div><div class="stat-label">Médicos cadastrados</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:${ausentes>0?'#a32d2d':'#27500a'}">${ausentes}</div><div class="stat-label">Ausentes hoje</div></div>
+    <div class="stat-card"><div class="stat-num">${state.unidades.length}</div><div class="stat-label">Unidades</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:${pendentes>0?'#a32d2d':'#27500a'}">${pendentes}</div><div class="stat-label">Sem cobertura hoje</div></div>`;
+}
+
+function renderPending(){
+  const tk=dateKey(hoje.getFullYear(),hoje.getMonth(),hoje.getDate());
+  const pending=state.unidades.filter(u=>!(state.escalas[tk]&&state.escalas[tk][u.id]&&state.escalas[tk][u.id].length>0));
+  document.getElementById('pending-units').innerHTML=pending.length===0
+    ?'<div class="alert-card alert-ok"><div class="alert-title">Todas as unidades com cobertura hoje</div></div>'
+    :pending.map(u=>`<div class="alert-card alert-danger"><div class="alert-title">⚠ ${u.nome}</div><div class="alert-body">${u.bairro}</div></div>`).join('');
+}
+
+function renderHolidays(){
+  const now=new Date(); const upcoming=[];
+  for(let i=1;i<120;i++){
+    const d=new Date(now); d.setDate(now.getDate()+i);
+    const f=isFeriado(d.getFullYear(),d.getMonth(),d.getDate());
+    if(f) upcoming.push({date:d,nome:f.nome});
+    if(upcoming.length>=3) break;
+  }
+  document.getElementById('upcoming-holidays').innerHTML=upcoming.length===0
+    ?'<p style="font-size:13px;color:#888">Nenhum feriado nos próximos 120 dias.</p>'
+    :upcoming.map(h=>`<div class="alert-card alert-warn"><div class="alert-title">📅 ${h.nome}</div><div class="alert-body">${h.date.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</div></div>`).join('');
+}
+
+function renderCalendar(){
+  const label=new Date(calYear,calMonth,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  document.getElementById('cal-month-label').textContent=label.charAt(0).toUpperCase()+label.slice(1);
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  let html='';
+  for(let i=0;i<firstDay;i++) html+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const key=dateKey(calYear,calMonth,d);
+    const isToday=hoje.getFullYear()===calYear&&hoje.getMonth()===calMonth&&hoje.getDate()===d;
+    const feriado=isFeriado(calYear,calMonth,d);
+    const weekend=isWeekend(calYear,calMonth,d);
+    const hasCov=state.escalas[key]&&Object.values(state.escalas[key]).some(a=>a&&a.length>0);
+    let cls='cal-day';
+    if(isToday) cls+=' today';
+    else if(feriado) cls+=' holiday';
+    else if(hasCov) cls+=' covered';
+    else if(!weekend) cls+=' pending';
+    else cls+=' weekend';
+    if(selectedDate===key) cls+=' selected';
+    html+=`<div class="${cls}" onclick="selectDay(${calYear},${calMonth},${d})">${d}</div>`;
+  }
+  document.getElementById('cal-days').innerHTML=html;
+}
+
+function selectDay(y,m,d){
+  selectedDate=dateKey(y,m,d);
+  renderCalendar();
+  const date=new Date(y,m,d);
+  const feriado=isFeriado(y,m,d);
+  document.getElementById('day-detail-panel').style.display='block';
+  document.getElementById('day-detail-title').textContent=date.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('day-detail-subtitle').textContent=feriado?'Feriado: '+feriado.nome:'';
+  renderDayShifts();
+}
+
+function renderDayShifts(){
+  if(!selectedDate) return;
+  const dayEsc=state.escalas[selectedDate]||{};
+  const unitsToShow=agendaUnitFilter?state.unidades.filter(u=>u.id===agendaUnitFilter):state.unidades;
+  if(unitsToShow.length===0){
+    document.getElementById('day-shifts-list').innerHTML='<div class="empty-state"><p>Nenhuma unidade cadastrada</p></div>';
+    return;
+  }
+  const dow=new Date(selectedDate+'T00:00:00').getDay();
+  let html='';
+  unitsToShow.forEach(u=>{
+    const shifts=(dayEsc[u.id]||[]);
+    const opHour=u.horarios&&u.horarios[dow];
+    html+=`<div style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
+        <span>${u.nome}</span>
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+          ${opHour?`<span style="font-size:11px;color:#0c447c;background:#e6f1fb;padding:2px 8px;border-radius:20px;font-weight:600">${opHour.ini}–${opHour.fim}</span>`:'<span style="font-size:11px;color:#633806;background:#faeeda;padding:2px 8px;border-radius:20px;font-weight:600">Fechada</span>'}
+          ${shifts.length===0?'<span class="badge badge-danger">Sem cobertura</span>':'<span class="badge badge-ok">'+shifts.length+' médico(s)</span>'}
+        </div>
+      </div>`;
+    if(shifts.length===0){
+      html+=`<div style="font-size:13px;color:#aaa;padding:8px 0">Nenhum médico escalado.</div>`;
+    } else {
+      shifts.forEach((s,i)=>{
+        const med=state.medicos.find(m=>m.id===s.medicoId);
+        const ausente=s.ausenteId?state.medicos.find(m=>m.id===s.ausenteId):null;
+        const dur=calcHoras(s.horaIni,s.horaFim);
+        html+=`<div class="shift-slot">
+          <div class="shift-slot-info">
+            <div class="shift-name">${med?med.nome:'Médico removido'}</div>
+            <div class="shift-time">${s.horaIni} – ${s.horaFim} <span class="shift-dur">(${dur}h)</span></div>
+            ${ausente?`<div class="shift-cover">↔ Cobrindo: ${ausente.nome}</div>`:''}
+            ${s.obs?`<div class="shift-obs">${s.obs}</div>`:''}
+          </div>
+          <button class="btn-ghost btn-danger" onclick="removeShift('${selectedDate}',${u.id},${i})" title="Remover">✕</button>
+        </div>`;
+      });
+    }
+    html+='</div>';
+  });
+  document.getElementById('day-shifts-list').innerHTML=html;
+}
+
+function calcHoras(ini,fim){
+  if(!ini||!fim) return '?';
+  const [hi,mi]=ini.split(':').map(Number);
+  const [hf,mf]=fim.split(':').map(Number);
+  const diff=(hf*60+mf)-(hi*60+mi);
+  if(diff<=0) return '?';
+  const h=Math.floor(diff/60), m=diff%60;
+  return m===0?String(h):`${h}:${String(m).padStart(2,'0')}`;
+}
+
+function removeShift(dk,uid,idx){
+  state.escalas[dk][uid].splice(idx,1);
+  saveState();
+  renderDayShifts(); renderCalendar(); renderStats(); renderPending();
+}
+
+function renderUnitFilterTabs(){
+  document.getElementById('unit-filter-tabs').innerHTML=
+    `<button class="tab-btn ${!agendaUnitFilter?'active':''}" onclick="setUnitFilter(null,this)">Todas</button>`+
+    state.unidades.map(u=>`<button class="tab-btn ${agendaUnitFilter===u.id?'active':''}" onclick="setUnitFilter(${u.id},this)">${u.nome.replace('UBS ','')}</button>`).join('');
+}
+
+function setUnitFilter(id,btn){
+  agendaUnitFilter=id;
+  document.querySelectorAll('#unit-filter-tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(selectedDate) renderDayShifts();
+}
+
+function prevMonth(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function nextMonth(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+
+function renderDoctors(filter){
+  let list=state.medicos;
+  if(filter!=='all') list=list.filter(m=>m.status===filter);
+  document.getElementById('doctors-list').innerHTML=list.length===0
+    ?'<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>Nenhum médico encontrado</p></div>'
+    :list.map(m=>{
+      const sub=m.substituto?state.medicos.find(d=>d.id===m.substituto):null;
+      const units=m.unidades?m.unidades.map(uid=>state.unidades.find(u=>u.id===uid)?.nome?.replace('UBS ','')).filter(Boolean).join(', '):'';
+      return `<div class="card" style="margin-bottom:10px">
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <div class="avatar ${m.status==='ausente'?'ausente':''}">${getInitials(m.nome)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap">
+              <div style="font-size:14px;font-weight:600;color:#111">${m.nome}</div>
+              <span class="badge ${m.status==='ativo'?'badge-ok':'badge-danger'}">${m.status==='ativo'?'Ativo':'Ausente'}</span>
+            </div>
+            <div style="font-size:12px;color:#666;margin-top:2px">${m.crm||''}${m.crm&&m.especialidade?' · ':''}${m.especialidade||''}</div>
+            ${units?`<div style="font-size:12px;color:#666;margin-top:2px">🏥 ${units}</div>`:''}
+            ${m.status==='ausente'?`<div style="font-size:12px;color:#a32d2d;margin-top:4px">⚠ ${m.motivo||'Ausência'}${sub?' · Cobertura: '+sub.nome:' · Sem cobertura'}</div>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <button class="tab-btn" style="font-size:12px;padding:6px 12px" onclick="openAddMedico(${m.id})">✏ Editar</button>
+          <button class="tab-btn btn-danger" style="font-size:12px;padding:6px 12px" onclick="confirmDelete('Remover médico '+${JSON.stringify(m.nome)}+'?',()=>deleteMedico(${m.id}))">🗑 Remover</button>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+function filterDoctors(f,btn){
+  document.querySelectorAll('#sec-medicos .tab-row .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderDoctors(f);
+}
+function deleteMedico(id){state.medicos=state.medicos.filter(m=>m.id!==id);saveState();renderDoctors('all');renderStats();renderPending();}
+
+function renderUnits(){
+  const tk=dateKey(hoje.getFullYear(),hoje.getMonth(),hoje.getDate());
+  document.getElementById('units-list').innerHTML=state.unidades.length===0
+    ?'<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><p>Nenhuma unidade cadastrada</p></div>'
+    :state.unidades.map(u=>{
+      const meds=state.medicos.filter(m=>m.unidades&&m.unidades.includes(u.id));
+      const hasCov=state.escalas[tk]&&state.escalas[tk][u.id]&&state.escalas[tk][u.id].length>0;
+      const horariosHtml=DIAS.map((dn,i)=>{
+        const h=u.horarios&&u.horarios[i];
+        return `<div class="op-day-row"><span class="op-day-name">${dn}</span><span class="op-day-hours">${h?`${h.ini} – ${h.fim}`:'Fechado'}</span></div>`;
+      }).join('');
+      return `<div class="card" style="margin-bottom:10px">
+        <div class="card-header">
+          <div><div class="card-title">${u.nome}</div><div class="card-subtitle">${u.bairro}</div></div>
+          <span class="badge ${hasCov?'badge-ok':'badge-danger'}">${hasCov?'Coberta':'Pendente'}</span>
+        </div>
+        <div style="background:#f9f9f9;border-radius:8px;padding:8px 12px;margin-bottom:10px">${horariosHtml}</div>
+        <div style="font-size:12px;color:#666;margin-bottom:10px">
+          👥 ${meds.length} médico(s)${meds.length>0?': '+meds.map(m=>`<span class="inline-tag">${m.nome.split(' ')[0]} ${m.nome.split(' ').slice(-1)[0]}</span>`).join(' '):''}
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="tab-btn" style="font-size:12px;padding:6px 12px" onclick="openAddUnidade(${u.id})">✏ Editar</button>
+          <button class="tab-btn btn-danger" style="font-size:12px;padding:6px 12px" onclick="confirmDelete('Remover unidade ${u.nome}?',()=>deleteUnidade(${u.id}))">🗑 Remover</button>
+        </div>
+      </div>`;
+    }).join('');
+}
+function deleteUnidade(id){state.unidades=state.unidades.filter(u=>u.id!==id);saveState();renderUnits();renderStats();renderUnitFilterTabs();}
+
+function openAddTurno(){
+  if(!selectedDate){
+    showModal('modal-main',`<p class="modal-title">Selecione um dia</p><p style="font-size:14px;color:#666">Toque em um dia no calendário primeiro.</p><button class="btn-secondary" onclick="closeModal('modal-main')">Fechar</button>`);
+    return;
+  }
+  const selDate=new Date(selectedDate+'T00:00:00');
+  const dow=selDate.getDay();
+  if(state.unidades.length===0){
+    showModal('modal-main',`<p class="modal-title">Sem unidades</p><p style="font-size:14px;color:#666">Cadastre uma unidade primeiro na aba Unidades.</p><button class="btn-secondary" onclick="closeModal('modal-main')">Fechar</button>`);
+    return;
+  }
+  if(state.medicos.length===0){
+    showModal('modal-main',`<p class="modal-title">Sem médicos</p><p style="font-size:14px;color:#666">Cadastre um médico primeiro na aba Médicos.</p><button class="btn-secondary" onclick="closeModal('modal-main')">Fechar</button>`);
+    return;
+  }
+  const unitOpts=state.unidades.map(u=>{
+    const h=u.horarios&&u.horarios[dow];
+    return `<option value="${u.id}">${u.nome}${h?' ('+h.ini+'–'+h.fim+')':'(fechada)'}</option>`;
+  }).join('');
+  const medOpts=state.medicos.map(m=>`<option value="${m.id}">${m.nome}${m.status==='ausente'?' ⚠':''}</option>`).join('');
+  const ausOpts='<option value="">Não — turno regular</option>'+state.medicos.map(m=>`<option value="${m.id}">Sim, cobrindo ${m.nome}</option>`).join('');
+
+  const unitsData=JSON.stringify(state.unidades);
+  showModal('modal-turno',`
+    <p class="modal-title">Adicionar turno</p>
+    <p style="font-size:13px;color:#666;margin-bottom:14px">${selDate.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</p>
+    <div class="form-group"><label class="form-label">Unidade</label><select class="form-input" id="t-unidade" onchange="sugerirHorario(${dow})">${unitOpts}</select></div>
+    <div class="form-group">
+      <label class="form-label">Horário de entrada e saída do médico</label>
+      <div class="time-row">
+        <input class="form-input" type="time" id="t-ini" style="flex:1">
+        <span class="time-sep">até</span>
+        <input class="form-input" type="time" id="t-fim" style="flex:1">
+      </div>
+      <div class="unit-hour-hint" id="t-hint"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Médico escalado</label><select class="form-input" id="t-medico">${medOpts}</select></div>
+    <div class="form-group"><label class="form-label">É cobertura de ausência?</label><select class="form-input" id="t-cobertura">${ausOpts}</select></div>
+    <div class="form-group"><label class="form-label">Observação (opcional)</label><input class="form-input" id="t-obs" type="text" placeholder="Ex: plantão especial, campanha..."></div>
+    <button class="btn-primary" onclick="saveShift()">Salvar turno</button>
+    <button class="btn-secondary" onclick="closeModal('modal-turno')">Cancelar</button>
+    <script>
+    (function(){
+      var unids=${unitsData};
+      var dow=${dow};
+      window._unidsData=unids;
+      window._dow=dow;
+      function sugere(){
+        var uid=parseInt(document.getElementById('t-unidade').value);
+        var u=unids.find(function(x){return x.id===uid;});
+        var h=u&&u.horarios&&u.horarios[dow];
+        if(h){
+          document.getElementById('t-ini').value=h.ini;
+          document.getElementById('t-fim').value=h.fim;
+          document.getElementById('t-hint').textContent='Sugestão conforme horário da unidade: '+h.ini+' – '+h.fim+'. Edite se necessário.';
+        } else {
+          document.getElementById('t-ini').value='';
+          document.getElementById('t-fim').value='';
+          document.getElementById('t-hint').textContent='Unidade fechada neste dia — insira o horário manualmente.';
+        }
+      }
+      window.sugerirHorario=sugere;
+      sugere();
+    })();
+    <\/script>
+  `);
+}
+
+function saveShift(){
+  const uid=parseInt(document.getElementById('t-unidade').value);
+  const ini=document.getElementById('t-ini').value;
+  const fim=document.getElementById('t-fim').value;
+  const mid=parseInt(document.getElementById('t-medico').value);
+  const cob=document.getElementById('t-cobertura').value;
+  const obs=document.getElementById('t-obs').value.trim();
+  if(!ini||!fim){alert('Informe o horário de entrada e saída.');return;}
+  if(!state.escalas[selectedDate]) state.escalas[selectedDate]={};
+  if(!state.escalas[selectedDate][uid]) state.escalas[selectedDate][uid]=[];
+  state.escalas[selectedDate][uid].push({medicoId:mid,horaIni:ini,horaFim:fim,cobertura:!!cob,ausenteId:cob?parseInt(cob):null,obs});
+  saveState();
+  closeModal('modal-turno');
+  renderDayShifts(); renderCalendar(); renderStats(); renderPending();
+}
+
+function buildHorarioForm(existing){
+  return DIAS.map((dn,i)=>{
+    const h=existing&&existing[i];
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid rgba(0,0,0,0.08)">
+      <span style="font-size:13px;color:#111;width:36px;flex-shrink:0;font-weight:500">${dn}</span>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;flex-shrink:0;white-space:nowrap">
+        <input type="checkbox" id="op-open-${i}" ${h?'checked':''} style="width:17px;height:17px;cursor:pointer" onchange="toggleDayHour(${i})"> Aberta
+      </label>
+      <div id="op-hours-${i}" style="display:${h?'flex':'none'};align-items:center;gap:4px;flex:1;min-width:0">
+        <input class="form-input" type="time" id="op-ini-${i}" value="${h?h.ini:'07:00'}" style="flex:1;padding:8px">
+        <span style="font-size:12px;color:#888;flex-shrink:0">–</span>
+        <input class="form-input" type="time" id="op-fim-${i}" value="${h?h.fim:'17:00'}" style="flex:1;padding:8px">
+      </div>
+      ${!h?`<span id="op-closed-${i}" style="font-size:12px;color:#aaa">Fechado</span>`:`<span id="op-closed-${i}" style="font-size:12px;color:#aaa;display:none">Fechado</span>`}
+    </div>`;
+  }).join('');
+}
+
+function toggleDayHour(i){
+  const open=document.getElementById('op-open-'+i).checked;
+  document.getElementById('op-hours-'+i).style.display=open?'flex':'none';
+  document.getElementById('op-closed-'+i).style.display=open?'none':'inline';
+}
+
+function openAddMedico(id){
+  const m=id?state.medicos.find(d=>d.id===id):null;
+  const unitChks=state.unidades.map(u=>`
+    <label style="display:flex;align-items:center;gap:8px;font-size:14px;padding:5px 0;cursor:pointer">
+      <input type="checkbox" value="${u.id}" ${m&&m.unidades&&m.unidades.includes(u.id)?'checked':''} style="width:17px;height:17px;cursor:pointer"> ${u.nome}
+    </label>`).join('');
+  showModal('modal-main',`
+    <p class="modal-title">${m?'Editar médico':'Novo médico'}</p>
+    <div class="form-group"><label class="form-label">Nome completo *</label><input class="form-input" id="m-nome" type="text" value="${m?escHtml(m.nome):''}" placeholder="Dr. Nome Sobrenome"></div>
+    <div class="form-group"><label class="form-label">CRM</label><input class="form-input" id="m-crm" type="text" value="${m?escHtml(m.crm||''):''}" placeholder="CRM/SP 00000"></div>
+    <div class="form-group"><label class="form-label">Especialidade</label><input class="form-input" id="m-esp" type="text" value="${m?escHtml(m.especialidade||''):''}" placeholder="Ex: Clínica Geral"></div>
+    <div class="form-group"><label class="form-label">Status</label>
+      <select class="form-input" id="m-status" onchange="document.getElementById('m-aus-fields').style.display=this.value==='ausente'?'block':'none'">
+        <option value="ativo" ${!m||m.status==='ativo'?'selected':''}>Ativo</option>
+        <option value="ausente" ${m&&m.status==='ausente'?'selected':''}>Ausente</option>
+      </select>
+    </div>
+    <div id="m-aus-fields" style="${m&&m.status==='ausente'?'':'display:none'}">
+      <div class="form-group"><label class="form-label">Motivo da ausência</label><input class="form-input" id="m-motivo" type="text" value="${m?escHtml(m.motivo||''):''}" placeholder="Ex: Férias, licença médica"></div>
+      <div class="form-group"><label class="form-label">Médico substituto / cobertura</label>
+        <select class="form-input" id="m-sub"><option value="">Sem cobertura definida</option>${state.medicos.filter(d=>!m||d.id!==m.id).map(d=>`<option value="${d.id}" ${m&&m.substituto===d.id?'selected':''}>${escHtml(d.nome)}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Unidades vinculadas</label><div style="margin-top:6px">${unitChks||'<p style="font-size:13px;color:#888">Cadastre unidades primeiro.</p>'}</div></div>
+    <button class="btn-primary" onclick="saveMedico(${id||'null'})">Salvar</button>
+    <button class="btn-secondary" onclick="closeModal('modal-main')">Cancelar</button>
+  `);
+}
+
+function saveMedico(id){
+  const nome=document.getElementById('m-nome').value.trim();
+  if(!nome){alert('Informe o nome do médico.');return;}
+  const data={
+    nome, crm:document.getElementById('m-crm').value.trim(),
+    especialidade:document.getElementById('m-esp').value.trim(),
+    status:document.getElementById('m-status').value,
+    motivo:document.getElementById('m-motivo')?document.getElementById('m-motivo').value.trim():'',
+    substituto:document.getElementById('m-sub')?parseInt(document.getElementById('m-sub').value)||null:null,
+    unidades:[...document.querySelectorAll('#modal-main-content input[type=checkbox]:checked')].map(c=>parseInt(c.value))
+  };
+  if(id){Object.assign(state.medicos.find(m=>m.id===id),data);}
+  else{state.medicos.push({id:state.nextMedId++,...data});}
+  saveState();
+  closeModal('modal-main'); renderDoctors('all'); renderStats(); renderPending(); renderUnits();
+}
+
+function openAddUnidade(id){
+  const u=id?state.unidades.find(x=>x.id===id):null;
+  showModal('modal-main',`
+    <p class="modal-title">${u?'Editar unidade':'Nova unidade'}</p>
+    <div class="form-group"><label class="form-label">Nome da unidade *</label><input class="form-input" id="u-nome" type="text" value="${u?escHtml(u.nome):''}" placeholder="Ex: UBS Jardim das Flores"></div>
+    <div class="form-group"><label class="form-label">Bairro / Localização</label><input class="form-input" id="u-bairro" type="text" value="${u?escHtml(u.bairro||''):''}" placeholder="Ex: Jardim das Flores"></div>
+    <div class="form-group">
+      <label class="form-label">Horário de funcionamento</label>
+      <div style="margin-top:8px">${buildHorarioForm(u?u.horarios:null)}</div>
+    </div>
+    <button class="btn-primary" onclick="saveUnidade(${id||'null'})">Salvar</button>
+    <button class="btn-secondary" onclick="closeModal('modal-main')">Cancelar</button>
+  `);
+}
+
+function saveUnidade(id){
+  const nome=document.getElementById('u-nome').value.trim();
+  if(!nome){alert('Informe o nome da unidade.');return;}
+  const horarios={};
+  for(let i=0;i<7;i++){
+    const open=document.getElementById('op-open-'+i).checked;
+    horarios[i]=open?{ini:document.getElementById('op-ini-'+i).value||'07:00',fim:document.getElementById('op-fim-'+i).value||'17:00'}:null;
+  }
+  const data={nome,bairro:document.getElementById('u-bairro').value.trim(),horarios};
+  if(id){Object.assign(state.unidades.find(u=>u.id===id),data);}
+  else{state.unidades.push({id:state.nextUnitId++,...data});}
+  saveState();
+  closeModal('modal-main'); renderUnits(); renderUnitFilterTabs(); renderStats();
+}
+
+function loadOTMonths(){
+  const sel=document.getElementById('ot-filter-month');
+  while(sel.options.length>1) sel.remove(1);
+  const months=new Set();
+  state.horasExtras.forEach(h=>{
+    const d=new Date(h.data+'T00:00:00');
+    months.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  });
+  [...months].sort().reverse().forEach(mk=>{
+    const [y,mo]=mk.split('-');
+    const label=new Date(parseInt(y),parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    const opt=document.createElement('option');
+    opt.value=mk; opt.textContent=label.charAt(0).toUpperCase()+label.slice(1);
+    sel.appendChild(opt);
+  });
+}
+
+function renderOT(){
+  const filter=document.getElementById('ot-filter-month').value;
+  let list=filter?state.horasExtras.filter(h=>h.data.startsWith(filter)):[...state.horasExtras];
+  list.sort((a,b)=>b.data.localeCompare(a.data));
+  if(list.length===0){
+    document.getElementById('ot-list').innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><p>Nenhum registro de horas extras</p></div>';
+    document.getElementById('ot-summary').innerHTML=''; return;
+  }
+  document.getElementById('ot-list').innerHTML=list.map(h=>`
+    <div class="ot-row">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="ot-name">${escHtml(h.medico)}</div>
+        <button class="btn-ghost btn-danger" onclick="confirmDelete('Remover registro de horas extras?',()=>deleteOT(${h.id}))">🗑</button>
+      </div>
+      <div class="ot-meta">🏥 ${escHtml(h.unidade)} · 📅 ${new Date(h.data+'T00:00:00').toLocaleDateString('pt-BR')} · <strong>${h.horas}h</strong></div>
+      <div class="ot-motivo">${escHtml(h.motivo)}</div>
+    </div>`).join('');
+  const total=list.reduce((a,h)=>a+h.horas,0);
+  const byMed={};
+  list.forEach(h=>{byMed[h.medico]=(byMed[h.medico]||0)+h.horas;});
+  document.getElementById('ot-summary').innerHTML=`
+    <div class="card" style="margin-top:4px">
+      <div class="card-title" style="margin-bottom:10px">Resumo do período</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;color:#666">Total de horas</span><strong style="font-size:15px">${total}h</strong></div>
+      ${Object.entries(byMed).map(([n,h])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:0.5px solid rgba(0,0,0,0.08)"><span style="font-size:13px;color:#111">${escHtml(n)}</span><span class="badge badge-gray">${h}h</span></div>`).join('')}
+    </div>`;
+}
+
+function deleteOT(id){state.horasExtras=state.horasExtras.filter(h=>h.id!==id);saveState();renderOT();loadOTMonths();}
+
+function openAddOT(){
+  if(state.medicos.length===0||state.unidades.length===0){
+    showModal('modal-main',`<p class="modal-title">Cadastro incompleto</p><p style="font-size:14px;color:#666">Cadastre médicos e unidades antes de registrar horas extras.</p><button class="btn-secondary" onclick="closeModal('modal-main')">Fechar</button>`);
+    return;
+  }
+  const medOpts=state.medicos.map(m=>`<option value="${escHtml(m.nome)}">${escHtml(m.nome)}</option>`).join('');
+  const unitOpts=state.unidades.map(u=>`<option value="${escHtml(u.nome)}">${escHtml(u.nome)}</option>`).join('');
+  showModal('modal-main',`
+    <p class="modal-title">Registrar horas extras</p>
+    <div class="form-group"><label class="form-label">Médico</label><select class="form-input" id="ot-medico">${medOpts}</select></div>
+    <div class="form-group"><label class="form-label">Unidade</label><select class="form-input" id="ot-unidade">${unitOpts}</select></div>
+    <div class="form-group"><label class="form-label">Data</label><input class="form-input" id="ot-data" type="date" value="${hoje.toISOString().split('T')[0]}"></div>
+    <div class="form-group"><label class="form-label">Quantidade de horas extras</label><input class="form-input" id="ot-horas" type="number" min="1" max="24" value="2"></div>
+    <div class="form-group"><label class="form-label">Motivo *</label><input class="form-input" id="ot-motivo" type="text" placeholder="Ex: Ausência de colega — emergência"></div>
+    <button class="btn-primary" onclick="saveOT()">Salvar</button>
+    <button class="btn-secondary" onclick="closeModal('modal-main')">Cancelar</button>
+  `);
+}
+
+function saveOT(){
+  const data={
+    id:state.nextOtId++,
+    medico:document.getElementById('ot-medico').value,
+    unidade:document.getElementById('ot-unidade').value,
+    data:document.getElementById('ot-data').value,
+    horas:parseInt(document.getElementById('ot-horas').value)||0,
+    motivo:document.getElementById('ot-motivo').value.trim()
+  };
+  if(!data.data||!data.horas||!data.motivo){alert('Preencha todos os campos obrigatórios.');return;}
+  state.horasExtras.push(data);
+  saveState(); closeModal('modal-main'); loadOTMonths(); renderOT();
+}
+
+function printOT(){
+  const filter=document.getElementById('ot-filter-month').value;
+  let list=filter?state.horasExtras.filter(h=>h.data.startsWith(filter)):[...state.horasExtras];
+  list.sort((a,b)=>a.data.localeCompare(b.data));
+  if(list.length===0){alert('Nenhum registro para imprimir.');return;}
+  const periodo=filter?new Date(filter+'-01T00:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'}):'Todos os períodos';
+  const total=list.reduce((a,h)=>a+h.horas,0);
+  const byMed={};
+  list.forEach(h=>{byMed[h.medico]=(byMed[h.medico]||0)+h.horas;});
+  const resumo=Object.entries(byMed).map(([n,h])=>`<tr><td>${n}</td><td style="text-align:center">${h}h</td></tr>`).join('');
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Horas Extras — ${periodo}</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;padding:28px;color:#111;font-size:13px}
+    h1{font-size:18px;margin-bottom:4px;color:#185FA5}
+    .sub{color:#666;font-size:12px;margin-bottom:24px}
+    table{width:100%;border-collapse:collapse;margin-bottom:24px}
+    th{background:#185FA5;color:#fff;padding:9px 11px;text-align:left;font-size:12px}
+    td{padding:8px 11px;border-bottom:1px solid #eee}
+    tr:nth-child(even) td{background:#f8f9ff}
+    tfoot td{background:#e8eef8;font-weight:bold;border-top:2px solid #185FA5}
+    h2{font-size:14px;margin-bottom:8px;color:#555}
+    .resumo td{padding:5px 11px}
+    .ass{margin-top:48px;display:flex;justify-content:space-between;gap:40px}
+    .ass-box{flex:1;text-align:center}
+    .ass-line{border-top:1px solid #333;padding-top:6px;font-size:12px;color:#555}
+    @media print{body{padding:16px}.ass{page-break-inside:avoid}}
+  </style></head><body>
+  <h1>Relatório de Horas Extras</h1>
+  <div class="sub">Período: ${periodo} &nbsp;|&nbsp; Gerado em: ${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+  <table>
+    <thead><tr><th>Médico</th><th>Unidade</th><th>Data</th><th>Horas</th><th>Motivo</th></tr></thead>
+    <tbody>${list.map(h=>`<tr><td>${h.medico}</td><td>${h.unidade}</td><td>${new Date(h.data+'T00:00:00').toLocaleDateString('pt-BR')}</td><td style="text-align:center">${h.horas}h</td><td>${h.motivo}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="3">Total geral</td><td style="text-align:center">${total}h</td><td></td></tr></tfoot>
+  </table>
+  <h2>Resumo por médico</h2>
+  <table style="max-width:360px"><thead><tr><th>Médico</th><th>Total de horas</th></tr></thead><tbody class="resumo">${resumo}</tbody></table>
+  <div class="ass">
+    <div class="ass-box"><div class="ass-line">Responsável pela gestão de escalas</div></div>
+    <div class="ass-box"><div class="ass-line">Entidade pagadora</div></div>
+  </div>
+  </body></html>`;
+  const win=window.open('','_blank');
+  if(win){win.document.write(html);win.document.close();setTimeout(()=>win.print(),400);}
+  else{alert('Permita popups para imprimir. Ou use o botão compartilhar do navegador.');}
+}
+
+function openFAB(){
+  const secs=['painel','agenda','medicos','unidades','horasextras'];
+  const active=secs.find(s=>document.getElementById('sec-'+s).classList.contains('active'));
+  if(active==='agenda') openAddTurno();
+  else if(active==='medicos') openAddMedico(null);
+  else if(active==='unidades') openAddUnidade(null);
+  else if(active==='horasextras') openAddOT();
+}
+
+function showModal(id,html){
+  document.getElementById(id+'-content').innerHTML=html;
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+function confirmDelete(msg,fn){if(confirm(msg))fn();}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));});
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
